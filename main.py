@@ -8,6 +8,8 @@ from typing import Any, Dict, Optional
 
 import dotenv
 
+from core.utils import remove_prefix
+
 
 dotenv.load_dotenv()
 
@@ -18,28 +20,20 @@ Message = namedtuple(
 )
 
 
-def remove_prefix(string: str, prefix: str) -> str:
-    if string.startswith(prefix):
-        return string[len(prefix):]
-    return string
-
-
 class Bot:
     def __init__(self) -> None:
         self.irc_server = 'irc.chat.twitch.tv'
         self.irc_port = 6697
         self.oauth_token = os.getenv('OAUTH_TOKEN')
         self.username = os.getenv('TWITCH_USERNAME')
-        self.channels = ['xchrombot']
+        self.channels = ['wazfu']
         self.command_prefix = '!'
         self.state: Dict[str, Any] = {}
         self.state_filename = 'state.json'
         self.state_schema: Dict[str, Any] = {
             'template_commands': {},
         }
-        # self.load_template_commands()
         self.custom_commands = {
-            'date': self.reply_with_date,
             'cmds': self.list_commands,
             'addcmd': self.add_template_command,
             'editcmd': self.edit_template_command,
@@ -51,6 +45,9 @@ class Bot:
         self.connect()
 
     def ensure_state_schema(self) -> bool:
+        """
+        Make sure the state has the default schema
+        """
         is_dirty = False
         for key in self.state_schema:
             if key not in self.state:
@@ -59,6 +56,9 @@ class Bot:
         return is_dirty
 
     def read_state(self) -> None:
+        """
+        Load states from file
+        """
         with open(self.state_filename, 'r') as file:
             self.state = json.load(file)
         is_dirty = self.ensure_state_schema()
@@ -66,6 +66,9 @@ class Bot:
             self.write_state()
 
     def write_state(self) -> None:
+        """
+        Update file with current state
+        """
         with open(self.state_filename, 'w') as file:
             json.dump(self.state, file)
 
@@ -78,35 +81,50 @@ class Bot:
         self.irc.send((command + '\r\n').encode('utf-8'))
 
     def connect(self) -> None:
+        """
+        Connect to twitch IRC server
+        """
         self.irc = ssl.wrap_socket(socket.socket())
         self.irc.connect((self.irc_server, self.irc_port))
         self.send_command(f'PASS {self.oauth_token}')
         self.send_command(f'NICK {self.username}')
         for channel in self.channels:
             self.send_command(f'JOIN #{channel}')
-            self.send_privmsg(channel, 'Hello!')
+            self.send_privmsg(channel, 'is here EleGiggle')
         self.loop_for_messages()
 
     def loop_for_messages(self) -> None:
-        while True:
-            received_messages = self.irc.recv(2048).decode('utf-8')
-            for message in received_messages.split('\r\n'):
-                self.handle_message(message)
+        try:
+            while True:
+                received_messages = self.irc.recv(2048).decode()
+                for message in received_messages.split('\r\n'):
+                    self.handle_message(message)
+        except KeyboardInterrupt:
+            print('Terminating bot...')
+            for channel in self.channels:
+                print(f'Leaving channel {channel}')
+                self.send_command(f'PART #{channel}')
+            self.irc.close()
+
+    def print_message(self, message: Message) -> None:
+        time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        channel = f':{message.channel}' if message.channel else ''
+        user = f'@{message.user}' if message.user else message.prefix
+        print(f'> [{time}] {channel} {user} {message.irc_command}: {message.text or ""}')
 
     def handle_message(self, received_message: str) -> None:
-        if not received_message:
+        if len(received_message) == 0:
             return
-        time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         message = self.parse_message(received_message)
-        print(f'> {time} :{message.channel} {message.user or message.prefix} {message.irc_command}: {message.text or ""}')
+        self.print_message(message)
 
         if message.irc_command == 'PING':
-            self.send_command('PONG :tmi.twitch.tv')
+            self.send_command('PONG :tmi.chat.twitch.tv')
 
         if message.irc_command == 'PRIVMSG':
             if self.custom_commands.get(message.text_command):
                 self.custom_commands[message.text_command](message)  # type: ignore
-            elif self.state.get('template_commands', None).get(message.text_command):
+            elif message.text_command in self.state['template_commands']:
                 self.handle_template_command(
                     message,
                     message.text_command,
@@ -169,7 +187,7 @@ class Bot:
         if hash_start is not None:
             channel = irc_args[hash_start][1:]
 
-        message = Message(
+        return Message(
             prefix=prefix,
             user=user,
             channel=channel,
@@ -179,13 +197,8 @@ class Bot:
             text_command=text_command,
             text_args=text_args
         )
-        return message
 
-    def reply_with_date(self, message: Message) -> None:
-        formatted_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        text = f'Here you go {message.user}, the date is {formatted_date}'
-        self.send_privmsg(message.channel, text)
-
+    # CUSTOM COMMANDS BEGIN
     def list_commands(self, message: Message) -> None:
         template_command_names = list(self.state['template_commands'].keys())
         custom_command_names = list(self.custom_commands.keys())
