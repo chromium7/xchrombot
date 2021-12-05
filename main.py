@@ -20,6 +20,10 @@ Message = namedtuple(
 )
 
 
+#@badge-info=;badges=;client-nonce=42ef7105da542f903e76632b768ab844;
+#color=#5F9EA0;display-name=xchromium7;emotes=;first-msg=0;flags=;id=3f23c8a6-30ee-442c-84ff-ad318fedf60e;
+#mod=0;room-id=746006571;subscriber=0;tmi-sent-ts=1638066687071;turbo=0;user-id=69618261;user-type= :xchromium7!xchromium7@xchromium7.tmi.twitch.tv PRIVMSG #xchrombot :!drop
+
 class Bot:
     def __init__(self) -> None:
         self.irc_server = 'irc.chat.twitch.tv'
@@ -80,14 +84,18 @@ class Bot:
             print(f'< {command}')
         self.irc.send((command + '\r\n').encode('utf-8'))
 
+    def send_credentials(self) -> None:
+        self.send_command(f'PASS {self.oauth_token}')
+        self.send_command(f'NICK {self.username}')
+        # self.send_command('CAP REQ :twitch.tv/membership')
+
     def connect(self) -> None:
         """
         Connect to twitch IRC server
         """
         self.irc = ssl.wrap_socket(socket.socket())
         self.irc.connect((self.irc_server, self.irc_port))
-        self.send_command(f'PASS {self.oauth_token}')
-        self.send_command(f'NICK {self.username}')
+        self.send_credentials()
         for channel in self.channels:
             self.send_command(f'JOIN #{channel}')
             self.send_privmsg(channel, 'is here EleGiggle')
@@ -116,8 +124,8 @@ class Bot:
         if len(received_message) == 0:
             return
         message = self.parse_message(received_message)
-        self.print_message(message)
-
+        # self.print_message(message)
+        print(received_message)
         if message.irc_command == 'PING':
             self.send_command('PONG :tmi.chat.twitch.tv')
 
