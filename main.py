@@ -1,24 +1,16 @@
-from collections import namedtuple
 import json
-import logging
 import os
 import socket
 import ssl
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import dotenv
 
 from core import parser
+from core.objects import Message
 
 
 dotenv.load_dotenv()
-
-
-UserInfo = namedtuple(
-    'UserInfo',
-    'badge_info badges bits client_nonce color '
-    'name emotes first_msg user_id user_type'
-)
 
 
 class Bot:

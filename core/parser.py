@@ -1,24 +1,9 @@
-from collections import namedtuple
 from typing import Optional
 
+from .objects import Message, UserInfo
 
 
-#@badge-info=;badges=;client-nonce=42ef7105da542f903e76632b768ab844;
-#color=#5F9EA0;display-name=xchromium7;emotes=;first-msg=0;flags=;id=3f23c8a6-30ee-442c-84ff-ad318fedf60e;
-#mod=0;room-id=746006571;subscriber=0;tmi-sent-ts=1638066687071;turbo=0;user-id=69618261;user-type= :xchromium7!xchromium7@xchromium7.tmi.twitch.tv PRIVMSG #xchrombot :!drop
-
-Message = namedtuple(
-    'Message',
-    ['prefix', 'user', 'channel', 'irc_command', 'irc_args', 'text', 'text_command', 'text_args']
-)
-
-UserInfo = namedtuple(
-    'UserInfo',
-    ['badge_info', 'badges', 'bits', 'client_nonce', 'color', 'name', 'emotes', 'first_msg', 'user_id', 'user_type']
-)
-
-
-def parse(received_message: str, command_prefix: str = '?') -> Message:
+def parse(received_message: str, command_prefix: str = '!') -> Message:
     # If tags are included, message starts with @
     if received_message.startswith('@'):
         user_data, message_data = received_message.split(' ', 1)
@@ -30,14 +15,32 @@ def parse(received_message: str, command_prefix: str = '?') -> Message:
 
 
 def parse_user_data(message: str) -> UserInfo:
+    """
+    Returns a UserInfo object
+    Parse the user data received when 
+    """
     parts = message.strip('@').split(';')
-    pass
+    user_keys = UserInfo.__annotations__
+    parts_dict = {}
+    for part in parts:
+        key, value = part.split('=', 1)
+        key = key.replace('-', '_')
+        if key in user_keys:
+            # Normalize boolean values
+            if user_keys[key] == bool:
+                value = True if value == '1' else False
+            parts_dict[key] = value
+
+    return UserInfo(**parts_dict)
 
 
-def parse_message_data(message: str, user_info: Optional[UserInfo] = None, command_prefix: str = '?') -> Message:
+def parse_message_data(message: str, user: Optional[UserInfo] = None, command_prefix: str = '!') -> Message:
+    """
+    Returns a Message object
+    Parse the standard message data received from twitch IRC
+    """
     parts = message.split(' ')
     prefix = None
-    user = None
     channel = None
     irc_command = None
     irc_args = None
@@ -46,7 +49,8 @@ def parse_message_data(message: str, user_info: Optional[UserInfo] = None, comma
     text_args = None
     if parts[0].startswith(':'):
         prefix = parts[0].lstrip(':')
-        user = get_user_from_prefix(prefix)
+        if not user:
+            user = get_user_from_prefix(prefix)
         parts = parts[1:]
 
     text_start = next(
@@ -72,7 +76,6 @@ def parse_message_data(message: str, user_info: Optional[UserInfo] = None, comma
         channel = irc_args[hash_start][1:]
 
     return Message(
-        id='',
         prefix=prefix,
         user=user,
         channel=channel,
@@ -91,3 +94,13 @@ def get_user_from_prefix(prefix: str) -> Optional[str]:
     if 'tmi.twitch.tv' not in domain:
         return domain
     return None
+
+if __name__ == '__main__':
+    from core.parser import parse
+    text = (
+        '@badge-info=;badges=;client-nonce=42ef7105da542f903e76632b768ab844;'
+        'color=#5F9EA0;display-name=xchromium7;emotes=;first-msg=0;flags=;id=3f23c8a6-30ee-442c-84ff-ad318fedf60e;'
+        'mod=0;room-id=746006571;subscriber=0;tmi-sent-ts=1638066687071;turbo=0;user-id=69618261;user-type= :xchromium7!xchromium7@xchromium7.tmi.twitch.tv PRIVMSG #xchrombot :!drop'
+    )
+    x = parse(text)
+    print(x)
