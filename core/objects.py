@@ -20,6 +20,7 @@ class UserInfo:
     turbo: bool
     user_id: str
     user_type: str
+    emote_only: bool = False
 
 
 @dataclass

@@ -25,10 +25,12 @@ def parse_user_data(message: str) -> UserInfo:
     for part in parts:
         key, value = part.split('=', 1)
         key = key.replace('-', '_')
-        if key in user_keys:
-            # Normalize boolean values
-            if user_keys[key] == bool:
-                value = True if value == '1' else False
+        if key not in user_keys:
+            continue
+        # Normalize boolean values
+        if user_keys[key] == bool:
+            parts_dict[key] = True if value == '1' else False
+        else:
             parts_dict[key] = value
 
     return UserInfo(**parts_dict)

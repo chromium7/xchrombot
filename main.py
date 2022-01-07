@@ -6,7 +6,7 @@ from typing import Any, Dict
 
 import dotenv
 
-from core import parser
+from core.parser import parse
 from core.objects import Message
 
 
@@ -107,8 +107,8 @@ class Bot:
     def handle_message(self, received_message: str) -> None:
         if len(received_message) == 0:
             return
-        message = parser(received_message, command_prefix=self.command_prefix)
-        print(received_message)
+        message: Message = parse(received_message, command_prefix=self.command_prefix)
+        print(message)
 
         if message.irc_command == 'PING':
             self.send_command('PONG :tmi.chat.twitch.tv')
