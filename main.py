@@ -1,23 +1,16 @@
-from collections import namedtuple
-import datetime
 import json
 import os
 import socket
 import ssl
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import dotenv
 
-from core.utils import remove_prefix
+from core.parser import parse
+from core.objects import Message
 
 
 dotenv.load_dotenv()
-
-
-Message = namedtuple(
-    'Message',
-    'prefix user channel irc_command irc_args text text_command text_args'
-)
 
 
 class Bot:
@@ -26,7 +19,8 @@ class Bot:
         self.irc_port = 6697
         self.oauth_token = os.getenv('OAUTH_TOKEN')
         self.username = os.getenv('TWITCH_USERNAME')
-        self.channels = ['wazfu']
+        # self.channels = ['wazfu']
+        self.channels = ['xchrombot']
         self.command_prefix = '!'
         self.state: Dict[str, Any] = {}
         self.state_filename = 'state.json'
@@ -80,14 +74,18 @@ class Bot:
             print(f'< {command}')
         self.irc.send((command + '\r\n').encode('utf-8'))
 
+    def send_credentials(self) -> None:
+        self.send_command(f'PASS {self.oauth_token}')
+        self.send_command(f'NICK {self.username}')
+        self.send_command('CAP REQ :twitch.tv/tags')
+
     def connect(self) -> None:
         """
         Connect to twitch IRC server
         """
         self.irc = ssl.wrap_socket(socket.socket())
         self.irc.connect((self.irc_server, self.irc_port))
-        self.send_command(f'PASS {self.oauth_token}')
-        self.send_command(f'NICK {self.username}')
+        self.send_credentials()
         for channel in self.channels:
             self.send_command(f'JOIN #{channel}')
             self.send_privmsg(channel, 'is here EleGiggle')
@@ -106,17 +104,11 @@ class Bot:
                 self.send_command(f'PART #{channel}')
             self.irc.close()
 
-    def print_message(self, message: Message) -> None:
-        time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        channel = f':{message.channel}' if message.channel else ''
-        user = f'@{message.user}' if message.user else message.prefix
-        print(f'> [{time}] {channel} {user} {message.irc_command}: {message.text or ""}')
-
     def handle_message(self, received_message: str) -> None:
         if len(received_message) == 0:
             return
-        message = self.parse_message(received_message)
-        self.print_message(message)
+        message: Message = parse(received_message, command_prefix=self.command_prefix)
+        print(message)
 
         if message.irc_command == 'PING':
             self.send_command('PONG :tmi.chat.twitch.tv')
@@ -142,62 +134,6 @@ class Bot:
             return
         self.send_privmsg(message.channel, text)
 
-    def get_user_from_prefix(self, prefix: str) -> Optional[str]:
-        domain = prefix.split('!')[0]
-        if domain.endswith('.tmi.twitch.tv'):
-            return domain[:-len('.tmi.twitch.tv')]
-        if 'tmi.twitch.tv' not in domain:
-            return domain
-        return None
-
-    def parse_message(self, received_message: str) -> Message:
-        parts = received_message.split(' ')
-        prefix = None
-        user = None
-        channel = None
-        irc_command = None
-        irc_args = None
-        text = None
-        text_command = None
-        text_args = None
-        if parts[0].startswith(':'):
-            prefix = remove_prefix(parts[0], ':')
-            user = self.get_user_from_prefix(prefix)
-            parts = parts[1:]
-
-        text_start = next(
-            (i for i, part in enumerate(parts) if part.startswith(':')),
-            None
-        )
-        if text_start is not None:
-            text_parts = parts[text_start:]
-            text_parts[0] = text_parts[0][1:]
-            text = ' '.join(text_parts)
-            if text_parts[0].startswith(self.command_prefix):
-                text_command = remove_prefix(text_parts[0], self.command_prefix)
-                text_args = text_parts[1:]
-            parts = parts[:text_start]
-        irc_command = parts[0]
-        irc_args = parts[1:]
-
-        hash_start = next(
-            (i for i, part in enumerate(irc_args) if part.startswith('#')),
-            None
-        )
-        if hash_start is not None:
-            channel = irc_args[hash_start][1:]
-
-        return Message(
-            prefix=prefix,
-            user=user,
-            channel=channel,
-            irc_command=irc_command,
-            irc_args=irc_args,
-            text=text,
-            text_command=text_command,
-            text_args=text_args
-        )
-
     # CUSTOM COMMANDS BEGIN
     def list_commands(self, message: Message) -> None:
         template_command_names = list(self.state['template_commands'].keys())
@@ -216,7 +152,7 @@ class Bot:
             self.send_privmsg(message.channel, text)
             return
 
-        command_name = remove_prefix(message.text_args[0], self.command_prefix)
+        command_name = message.text_args[0].lstrip(self.command_prefix)
         template = ' '.join(message.text_args[1:])
         if command_name in self.state['template_commands'] and not force:
             text = f'@{message.user} Command {command_name} already exists, use {self.command_prefix}editcmd if you want to update it.'
@@ -237,7 +173,7 @@ class Bot:
             self.send_privmsg(message.channel, text)
             return
         command_names = [
-            remove_prefix(command, self.command_prefix)
+            command.lstrip(self.command_prefix)
             for command in message.text_args
         ]
         for command_name in command_names:
