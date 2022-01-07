@@ -96,13 +96,3 @@ def get_user_from_prefix(prefix: str) -> Optional[str]:
     if 'tmi.twitch.tv' not in domain:
         return domain
     return None
-
-if __name__ == '__main__':
-    from core.parser import parse
-    text = (
-        '@badge-info=;badges=;client-nonce=42ef7105da542f903e76632b768ab844;'
-        'color=#5F9EA0;display-name=xchromium7;emotes=;first-msg=0;flags=;id=3f23c8a6-30ee-442c-84ff-ad318fedf60e;'
-        'mod=0;room-id=746006571;subscriber=0;tmi-sent-ts=1638066687071;turbo=0;user-id=69618261;user-type= :xchromium7!xchromium7@xchromium7.tmi.twitch.tv PRIVMSG #xchrombot :!drop'
-    )
-    x = parse(text)
-    print(x)
