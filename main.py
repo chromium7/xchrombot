@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import socket
 import ssl
@@ -7,7 +8,7 @@ from typing import Any, Dict
 import dotenv
 
 from core.parser import parse
-from core.objects import Message
+from core.objects import Message, UserInfo
 
 
 dotenv.load_dotenv()
@@ -71,7 +72,7 @@ class Bot:
 
     def send_command(self, command: str) -> None:
         if 'PASS' not in command:
-            print(f'< {command}')
+            logging.info(f'< {command}')
         self.irc.send((command + '\r\n').encode('utf-8'))
 
     def send_credentials(self) -> None:
@@ -98,17 +99,23 @@ class Bot:
                 for message in received_messages.split('\r\n'):
                     self.handle_message(message)
         except KeyboardInterrupt:
-            print('Terminating bot...')
+            logging.info('Terminating bot...')
             for channel in self.channels:
-                print(f'Leaving channel {channel}')
+                logging.info(f'Leaving channel {channel}')
                 self.send_command(f'PART #{channel}')
             self.irc.close()
+
+    def log_message(self, message: Message) -> None:
+        user = message.user
+        if isinstance(user, UserInfo):
+            user = user.display_name
+        logging.info(f'> {user or "-"}@{message.channel}: {message.text}')
 
     def handle_message(self, received_message: str) -> None:
         if len(received_message) == 0:
             return
         message: Message = parse(received_message, command_prefix=self.command_prefix)
-        print(message)
+        self.log_message(message)
 
         if message.irc_command == 'PING':
             self.send_command('PONG :tmi.chat.twitch.tv')
@@ -129,8 +136,8 @@ class Bot:
         except IndexError:
             text = f'@{message.user} your command is missing an argument'
         except Exception as e:
-            print('Error while handling template command', message, template)
-            print(e)
+            logging.warning('Error while handling template command', message, template)
+            logging.warning(e)
             return
         self.send_privmsg(message.channel, text)
 
@@ -194,4 +201,10 @@ def main() -> None:
 
 
 if __name__ == '__main__':
+    FORMAT = '[%(asctime)-15s] %(levelname)s %(message)s'
+    logging.basicConfig(
+        level=logging.INFO,
+        format=FORMAT,
+        datefmt='%m/%d/%Y %I:%M:%S %p'
+    )
     main()
