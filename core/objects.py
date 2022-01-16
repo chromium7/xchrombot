@@ -22,6 +22,10 @@ class UserInfo:
     user_type: str
     emote_only: bool = False
 
+    @property
+    def is_mod(self) -> bool:
+        return self.mod or ('broadcaster' in self.badges)
+
 
 @dataclass
 class Message:
@@ -33,3 +37,9 @@ class Message:
     text: Optional[str]
     text_command: Optional[str]
     text_args: List[str]
+
+    @property
+    def user_name(self) -> str:
+        if type(self.user) == UserInfo:
+            return self.user.display_name
+        return self.user

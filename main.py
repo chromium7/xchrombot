@@ -7,8 +7,9 @@ from typing import Any, Dict
 
 import dotenv
 
+from core.decorators import require_mod
 from core.parser import parse
-from core.objects import Message, UserInfo
+from core.objects import Message
 
 
 dotenv.load_dotenv()
@@ -106,10 +107,7 @@ class Bot:
             self.irc.close()
 
     def log_message(self, message: Message) -> None:
-        user = message.user
-        if isinstance(user, UserInfo):
-            user = user.display_name
-        logging.info(f'> {user or "-"}@{message.channel}: {message.text}')
+        logging.info(f'> {message.user_name or "-"}@{message.channel}: {message.text}')
 
     def handle_message(self, received_message: str) -> None:
         if len(received_message) == 0:
@@ -134,7 +132,7 @@ class Bot:
         try:
             text = template.format(**{'message': message})
         except IndexError:
-            text = f'@{message.user} your command is missing an argument'
+            text = f'@{message.user_name} your command is missing an argument'
         except Exception as e:
             logging.warning('Error while handling template command', message, template)
             logging.warning(e)
@@ -149,34 +147,37 @@ class Bot:
             self.command_prefix + command
             for command in (template_command_names + custom_command_names)
         ]
-        text = f'@{message.user} ' + ' '.join(all_command_names)
+        text = f'@{message.user_name} ' + ' '.join(all_command_names)
         self.send_privmsg(message.channel, text)
 
+    @require_mod
     def add_template_command(self, message: Message, force: bool = False) -> None:
         if len(message.text_args) < 2:
             command = 'editcmd' if force else 'addcmd'
-            text = f'@{message.user} Usage: !{command} <name> <template>'
+            text = f'@{message.user_name} Usage: !{command} <name> <template>'
             self.send_privmsg(message.channel, text)
             return
 
         command_name = message.text_args[0].lstrip(self.command_prefix)
         template = ' '.join(message.text_args[1:])
         if command_name in self.state['template_commands'] and not force:
-            text = f'@{message.user} Command {command_name} already exists, use {self.command_prefix}editcmd if you want to update it.'
+            text = f'@{message.user_name} Command {command_name} already exists, use {self.command_prefix}editcmd if you want to update it.'
             self.send_privmsg(message.channel, text)
             return
 
         self.state['template_commands'][command_name] = template
         self.write_state()
-        text = f'@{message.user} Command {command_name} has been {"added" if not force else "updated"}!'
+        text = f'@{message.user_name} Command {command_name} has been {"added" if not force else "updated"}!'
         self.send_privmsg(message.channel, text)
 
+    @require_mod
     def edit_template_command(self, message: Message) -> None:
         return self.add_template_command(message, force=True)
 
+    @require_mod
     def delete_template_command(self, message: Message) -> None:
         if len(message.text_args) < 1:
-            text = f'@{message.user} Usage: !delcmd <name>'
+            text = f'@{message.user_name} Usage: !delcmd <name>'
             self.send_privmsg(message.channel, text)
             return
         command_names = [
@@ -185,13 +186,13 @@ class Bot:
         ]
         for command_name in command_names:
             if command_name not in self.state['template_commands']:
-                text = f'@{message.user} Command {command_name} does not exist.'
+                text = f'@{message.user_name} Command {command_name} does not exist.'
                 self.send_privmsg(message.channel, text)
                 return
         for command_name in command_names:
             del self.state['template_commands'][command_name]
         self.write_state()
-        text = f'@{message.user} Command {command_names} has been deleted!'
+        text = f'@{message.user_name} Command {command_names} has been deleted!'
         self.send_privmsg(message.channel, text)
 
 
