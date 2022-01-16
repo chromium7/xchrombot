@@ -1,4 +1,4 @@
-# ![Pog](/pog.png){:height:"40px" width:"40px"} xchrombot
+# <img src="/pog.png" alt="Pog" width="40px" height="40px"> xchrombot
 
 [xchrombot](https://github.com/chromium7/xchrombot) is an experimental Twitch chat bot built with Python. Features are currently still under developments.
 
