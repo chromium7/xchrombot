@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Union
 
 
 @dataclass
@@ -30,16 +30,16 @@ class UserInfo:
 @dataclass
 class Message:
     prefix: Optional[str]
-    user: Optional[UserInfo]
-    channel: Optional[str]
+    user: Union[UserInfo, str]
+    channel: str
     irc_command: Optional[str]
     irc_args: List[str]
     text: Optional[str]
-    text_command: Optional[str]
+    text_command: str
     text_args: List[str]
 
     @property
     def user_name(self) -> str:
         if type(self.user) == UserInfo:
             return self.user.display_name
-        return self.user
+        return self.user  # type: ignore
