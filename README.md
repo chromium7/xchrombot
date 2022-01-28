@@ -13,4 +13,4 @@ TWITCH_USERNAME="..."
 - Simply run `python main.py`
 
 ### Note
-Python isn't really the best language for a chatbot, but it allows for rapid development. While this chatbot works, it is more of an explorative project to familiarize myself with different APIs and twitch's IRC interface.
+Python may not be the best language for a chatbot, but it allows for rapid development. While this chatbot works, it is more of an explorative project to familiarize myself with different APIs and twitch's IRC interface.
