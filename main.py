@@ -1,26 +1,21 @@
 import json
 import logging
-import os
 import socket
 import ssl
 from typing import Any, Dict
 
-import dotenv
-
+from config import TWITCH_OAUTH_TOKEN, TWITCH_USERNAME
 from core.decorators import require_mod
 from core.parser import parse
 from core.objects import Message
-
-
-dotenv.load_dotenv()
 
 
 class Bot:
     def __init__(self) -> None:
         self.irc_server = 'irc.chat.twitch.tv'
         self.irc_port = 6697
-        self.oauth_token = os.getenv('OAUTH_TOKEN')
-        self.username = os.getenv('TWITCH_USERNAME')
+        self.oauth_token = TWITCH_OAUTH_TOKEN
+        self.username = TWITCH_USERNAME
         # self.channels = ['wazfu']
         self.channels = ['xchrombot']
         self.command_prefix = '!'

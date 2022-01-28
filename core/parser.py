@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Dict, Optional, Union
 
 from .objects import Message, UserInfo
 
@@ -21,7 +21,7 @@ def parse_user_data(message: str) -> UserInfo:
     """
     parts = message.strip('@').split(';')
     user_keys = UserInfo.__annotations__
-    parts_dict = {}
+    parts_dict: Dict[str, Any] = {}
     for part in parts:
         key, value = part.split('=', 1)
         key = key.replace('-', '_')
@@ -33,22 +33,22 @@ def parse_user_data(message: str) -> UserInfo:
         else:
             parts_dict[key] = value
 
-    return UserInfo(**parts_dict)
+    return UserInfo(**parts_dict)  # type: ignore
 
 
-def parse_message_data(message: str, user: Optional[UserInfo] = None, command_prefix: str = '!') -> Message:
+def parse_message_data(message: str, user: Union[UserInfo, str] = '', command_prefix: str = '!') -> Message:
     """
     Returns a Message object
     Parse the standard message data received from twitch IRC
     """
     parts = message.split(' ')
     prefix = None
-    channel = None
+    channel = ''
     irc_command = None
     irc_args = None
     text = None
-    text_command = None
-    text_args = None
+    text_command = ''
+    text_args = []
     if parts[0].startswith(':'):
         prefix = parts[0].lstrip(':')
         if not user:
@@ -89,10 +89,10 @@ def parse_message_data(message: str, user: Optional[UserInfo] = None, command_pr
     )
 
 
-def get_user_from_prefix(prefix: str) -> Optional[str]:
+def get_user_from_prefix(prefix: str) -> str:
     domain = prefix.split('!')[0]
     if domain.endswith('.tmi.twitch.tv'):
         return domain[:-len('.tmi.twitch.tv')]
     if 'tmi.twitch.tv' not in domain:
         return domain
-    return None
+    return ''
