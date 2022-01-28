@@ -3,11 +3,11 @@
 [xchrombot](https://github.com/chromium7/xchrombot) is an experimental Twitch chat bot built with Python. Features are currently still under developments.
 
 ## Installation
-- Create a `.env` file and define these two variables, replacing the `...` with the credentials for your bot's twitch account. You can generate your token here https://twitchapps.com/tmi/ while logged in to your chatbot account.
+- Create a `config_local.py` file and define these two variables, replacing the `...` with the credentials for your bot's twitch account. You can generate your token here https://twitchapps.com/tmi/ while logged in to your chatbot account.
 
 ```
-OAUTH_TOKEN=...
-TWITCH_USERNAME=...
+OAUTH_TOKEN="..."
+TWITCH_USERNAME="..."
 ```
 
 - Simply run `python main.py`
