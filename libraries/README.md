@@ -1,20 +1,30 @@
 # Setting up Spotify
 
-1.  Go to this page https://developer.spotify.com/dashboard
-2.  Create a new application in spotify
-3.  Store Client ID and Client Secret in config_local.py
-4.  Add `redirect uri`
+## Credentials set up
 
-Since we will be using the authorization code flow of `OAuth 2.0`,
-which require user to login to the app we just created.
+1.  Create `spotify.json` file in the base directory
+2.  Go to this page https://developer.spotify.com/dashboard
+3.  Create a new application in spotify
+4.  Add `http://127.0.0.1:8001/spotify/redirect` as `Redirect URI`
+5.  Store `Client ID`, `Client Secret` and `Redirect URI` in config_local.py 
+as `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` and `SPOTIFY_REDIRECT_URI` respectively
 
-To login your spotify account to the app, open up `python` 
-and put in the following code to get the login URL:
+Since we will be using the authorization code flow of `OAuth 2.0`, 
+user needs to login to the app that we just created.
 
-```py
-from libraries.spotify import get_authorization_url
-print(get_authorization_url())
+## Authorizing the app
+
+To login your spotify account to the app, run the following script through shell:
+
+```sh
+python libraries/app.py
 ```
+
+Then, open the following site in the browser, and click the link to connect your
+spotify account.
+
+> http://127.0.0.1:8001/
+
 
 More on this:
 
