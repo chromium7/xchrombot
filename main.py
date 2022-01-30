@@ -2,7 +2,7 @@ import json
 import logging
 import socket
 import ssl
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 from config import TWITCH_OAUTH_TOKEN, TWITCH_USERNAME
 from core.decorators import require_mod
@@ -156,13 +156,23 @@ class Bot:
         self.send_privmsg(message.channel, text)
 
     def get_spotify_currently_playing(self, message: Message, type: str) -> None:
-        song: Song = get_currently_playing()
-        text = ''
+        song: Optional[Song] = get_currently_playing()
+        if not song:
+            self.send_privmsg(
+                message.channel,
+                f'@{message.user_name}, There is no song playing currently'
+            )
+
         if type == 'song':
-            text = f'@{message.user_name}, The current song is {song.name} - {song.artists}: {song.track_url}'
+            self.send_privmsg(
+                message.channel,
+                f'@{message.user_name}, The current song is {song.name} - {song.artists}: {song.track_url}'
+            )
         elif type == 'context':
-            text = f'@{message.user_name}, Currently listening to {song.context_type}: {song.context_url}'
-        self.send_privmsg(message.channel, text)
+            self.send_privmsg(
+                message.channel,
+                f'@{message.user_name}, Currently listening to {song.context_type}: {song.context_url}'
+            )
 
     @require_mod
     def add_template_command(self, message: Message, force: bool = False) -> None:

@@ -3,7 +3,7 @@ import logging
 import requests
 from base64 import b64encode
 from datetime import datetime, timedelta
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from urllib.parse import urlencode, urljoin
 
 from config import SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI
@@ -125,17 +125,17 @@ def refresh_access_token(refresh_token: str) -> str:
         return {}
 
 
-def get_currently_playing() -> Song:
+def get_currently_playing() -> Optional[Song]:
     url = urljoin(BASE_URL, 'player/currently-playing')
     headers = get_json_headers()
     try:
         response = requests.get(url, headers=headers, timeout=2)
         # No currently playing song
         if response.status_code != 200:
-            return {}
+            return None
     except requests.RequestException as e:
         logging.error(f'Error while getting currently playing song: {e}')
-        return {}
+        return None
     data = response.json()
     context = data['context']
     item = data['item']
