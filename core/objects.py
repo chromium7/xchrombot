@@ -43,3 +43,16 @@ class Message:
         if type(self.user) == UserInfo:
             return self.user.display_name
         return self.user  # type: ignore
+
+
+@dataclass
+class Song:
+    id: str
+    name: str
+    artists: str
+    track_url: str
+    duration: int
+    is_playing: bool
+    # Currently playing playlist or album
+    context_type: str
+    context_url: str
