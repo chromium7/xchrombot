@@ -2,12 +2,13 @@ import json
 import logging
 import socket
 import ssl
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Tuple, Union
 
 from config import TWITCH_OAUTH_TOKEN, TWITCH_USERNAME
 from core.decorators import require_mod
 from core.parser import parse
-from core.objects import Message
+from core.objects import Message, Song
+from libraries.spotify import get_currently_playing
 
 
 class Bot:
@@ -29,6 +30,8 @@ class Bot:
             'addcmd': self.add_template_command,
             'editcmd': self.edit_template_command,
             'delcmd': self.delete_template_command,
+            'song': (self.get_spotify_currently_playing, 'song'),
+            'playlist': (self.get_spotify_currently_playing, 'context'),
         }
 
     def init(self) -> None:
@@ -115,7 +118,14 @@ class Bot:
 
         if message.irc_command == 'PRIVMSG':
             if self.custom_commands.get(message.text_command):
-                self.custom_commands[message.text_command](message)  # type: ignore
+                custom_command: Union[object, Tuple] = self.custom_commands[message.text_command]
+                if type(custom_command) == tuple:
+                    # Pass arguments if tuple
+                    func = custom_command[0]
+                    args = list(custom_command[1:])
+                    func(message, *args)
+                else:
+                    custom_command(message)  # type: ignore
             elif message.text_command in self.state['template_commands']:
                 self.handle_template_command(
                     message,
@@ -145,6 +155,25 @@ class Bot:
         text = f'@{message.user_name} ' + ' '.join(all_command_names)
         self.send_privmsg(message.channel, text)
 
+    def get_spotify_currently_playing(self, message: Message, type: str) -> None:
+        song: Optional[Song] = get_currently_playing()
+        if not song:
+            self.send_privmsg(
+                message.channel,
+                f'@{message.user_name}, There is no song playing currently'
+            )
+
+        if type == 'song':
+            self.send_privmsg(
+                message.channel,
+                f'@{message.user_name}, The current song is {song.name} - {song.artists}: {song.track_url}'
+            )
+        elif type == 'context':
+            self.send_privmsg(
+                message.channel,
+                f'@{message.user_name}, Currently listening to {song.context_type}: {song.context_url}'
+            )
+
     @require_mod
     def add_template_command(self, message: Message, force: bool = False) -> None:
         if len(message.text_args) < 2:
@@ -156,7 +185,8 @@ class Bot:
         command_name = message.text_args[0].lstrip(self.command_prefix)
         template = ' '.join(message.text_args[1:])
         if command_name in self.state['template_commands'] and not force:
-            text = f'@{message.user_name} Command {command_name} already exists, use {self.command_prefix}editcmd if you want to update it.'
+            text = (f'@{message.user_name} Command {command_name} already exists, '
+                    f'use {self.command_prefix}editcmd if you want to update it.')
             self.send_privmsg(message.channel, text)
             return
 

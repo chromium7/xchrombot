@@ -3,10 +3,11 @@ import logging
 import requests
 from base64 import b64encode
 from datetime import datetime, timedelta
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from urllib.parse import urlencode, urljoin
 
 from config import SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI
+from core.objects import Song
 
 
 BASE_URL = 'https://api.spotify.com/v1/me/'
@@ -99,7 +100,7 @@ def get_access_token() -> str:
     except (json.JSONDecodeError, FileNotFoundError):
         raise Exception('Spotify access token has not been configured properly.')
     # Refresh token if expired
-    return refresh_access_token()
+    return refresh_access_token(access_token['refresh_token'])
 
 
 def refresh_access_token(refresh_token: str) -> str:
@@ -118,21 +119,33 @@ def refresh_access_token(refresh_token: str) -> str:
         # Update access token
         with open('spotify.json', 'w') as f:
             json.dump(data, f)
-        return data['access_token']
+        return data
     except requests.RequestException as e:
         logging.error(f'Error while refreshing access token: {e}')
         return {}
 
 
-def get_current_song() -> Dict[str, Any]:
+def get_currently_playing() -> Optional[Song]:
     url = urljoin(BASE_URL, 'player/currently-playing')
     headers = get_json_headers()
     try:
         response = requests.get(url, headers=headers, timeout=2)
         # No currently playing song
-        if response.status_code == 204:
-            return {}
-        return response.json()
+        if response.status_code != 200:
+            return None
     except requests.RequestException as e:
         logging.error(f'Error while getting currently playing song: {e}')
-        return {}
+        return None
+    data = response.json()
+    context = data['context']
+    item = data['item']
+    return Song(
+        id=item['id'],
+        name=item['name'],
+        artists=", ".join([artist['name'] for artist in item['artists']]),
+        duration=item['duration_ms'],
+        track_url=item['external_urls']['spotify'],
+        is_playing=data['is_playing'],
+        context_type=context['type'],
+        context_url=context['external_urls']['spotify'],
+    )
