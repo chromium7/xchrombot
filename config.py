@@ -2,6 +2,7 @@
 # https://dev.twitch.tv/docs/irc
 TWITCH_OAUTH_TOKEN = ""
 TWITCH_USERNAME = ""
+TWITCH_CHANNELS = ["xchrombot"]
 
 # Spotify credentials
 # https://developer.spotify.com/documentation/web-api/quick-start/

@@ -1,0 +1,7 @@
+__pycache__
+.mypy_cache
+config_local.py
+spotify.json
+state.json
+
+Dockerfile

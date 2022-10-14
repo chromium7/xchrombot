@@ -12,5 +12,12 @@ TWITCH_USERNAME="..."
 
 - Simply run `python main.py`
 
+
+## Docker Installation
+
+- docker build -t xchrombot .
+- docker run -v ${PWD}:/app --name xchrombot-cont xchrombot
+
+
 ### Note
 Python may not be the best language for a chatbot, but it allows for rapid development. While this chatbot works, it is more of an explorative project to familiarize myself with different APIs and twitch's IRC interface.

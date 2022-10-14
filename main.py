@@ -4,7 +4,7 @@ import socket
 import ssl
 from typing import Any, Dict, Optional, Tuple, Union
 
-from config import TWITCH_OAUTH_TOKEN, TWITCH_USERNAME
+from config import TWITCH_OAUTH_TOKEN, TWITCH_USERNAME, TWITCH_CHANNELS
 from core.decorators import require_mod
 from core.parser import parse
 from core.objects import Message, Song
@@ -17,8 +17,7 @@ class Bot:
         self.irc_port = 6697
         self.oauth_token = TWITCH_OAUTH_TOKEN
         self.username = TWITCH_USERNAME
-        # self.channels = ['wazfu']
-        self.channels = ['xchrombot']
+        self.channels = TWITCH_CHANNELS
         self.command_prefix = '!'
         self.state: Dict[str, Any] = {}
         self.state_filename = 'state.json'
