@@ -41,8 +41,8 @@ jobs:
           push: true
           labels: ${{ steps.meta.outputs.labels }}
           tags: |
-            ${{ steps.meta.outputs.tags }}:latest
-            ${{ steps.meta.outputs.tags }}:${{ github.sha }}
+            latest
+            ${{ github.sha }}
 
       - name: Build branch docker image
         if: ${{ github.ref_name != 'master' }}
@@ -52,5 +52,5 @@ jobs:
           push: true
           labels: ${{ steps.meta.outputs.labels }}
           tags: |
-            ${{ steps.meta.outputs.tags }}:${{ github.ref_name }}
-            ${{ steps.meta.outputs.tags }}:${{ github.sha }}
+            ${{ github.ref_name }}
+            ${{ github.sha }}
