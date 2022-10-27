@@ -1,8 +1,9 @@
 name: Create and publish a Docker image
 
 on:
-  push:
-    branches: ['master']
+  # push:
+  #   branches: ['master']
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -32,10 +33,24 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      - name: Build and push Docker image
+      - name: Build latest docker image
+        if: ${{ github.ref_name == 'master' }}
         uses: docker/build-push-action@v3
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ${{ steps.meta.outputs.tags }}:latest
+            ${{ steps.meta.outputs.tags }}:${{ github.sha }}
+
+      - name: Build branch docker image
+        if: ${{ github.ref_name != 'master' }}
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ${{ steps.meta.outputs.tags }}:${{ github.ref_name }}
+            ${{ steps.meta.outputs.tags }}:${{ github.sha }}
