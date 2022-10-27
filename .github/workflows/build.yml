@@ -41,8 +41,8 @@ jobs:
           push: true
           labels: ${{ steps.meta.outputs.labels }}
           tags: |
-            latest
-            ${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
       - name: Build branch docker image
         if: ${{ github.ref_name != 'master' }}
@@ -52,5 +52,5 @@ jobs:
           push: true
           labels: ${{ steps.meta.outputs.labels }}
           tags: |
-            ${{ github.ref_name }}
-            ${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
