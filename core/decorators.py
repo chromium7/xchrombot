@@ -15,3 +15,4 @@ def require_mod(func: Callable) -> Callable:
             return None
         return func(self, message, *args, **kwargs)
     return inner
+
